@@ -367,6 +367,52 @@ class SSLContext(object):
             return callback(sz, rw, self._passwd_userdata)
         return WolfsslPwd_cb(wrapper)
 
+class WolfSSLCipher:
+    """
+    This class implemnets the Cipher struct
+    """
+
+    def __init__(self, wolfssl):
+        self.native_object = _lib.wolfSSL_get_current_cipher(wolfssl)
+
+        if self.native_object == _ffi.NULL:
+            raise SSLError("Unable to get internal WOLFSSL_CIPHER from wolfSSL")
+        
+
+    def get_name(self):
+        name_ptr = _lib.wolfSSL_CIPHER_get_name(self.native_object)
+        if (name_ptr == _ffi.NULL):
+            return None
+
+        return _ffi.string(name_ptr).decode("ascii")
+        
+    def get_version(self):
+        version_ptr = _lib.wolfSSL_CIPHER_get_version(self.native_object)
+        if (version_ptr == _ffi.NULL):
+            return None
+
+        return _ffi.string(version_ptr).decode("ascii")
+
+    def get_name_iana(self):
+        p1, p2 = self._get_suite_from_cipher()
+        name_ptr = _lib.wolfSSL_get_cipher_name_iana_from_suite(p1, p2)
+        if (name_ptr == _ffi.NULL):
+            return None
+
+        return _ffi.string(name_ptr).decode("ascii")
+
+    def _get_suite_from_cipher(self):
+        id = self.get_id()
+        return (id >> 8) & 0xff, id & 0xff
+
+    def get_id(self):
+        id_word32 = _lib.wolfSSL_CIPHER_get_id(self.native_object)
+        if (id_word32 == _ffi.NULL):
+            return None
+
+        return id_word32
+
+
 class SSLSocket(object):
     """
     This class implements a subtype of socket.socket that wraps the
@@ -831,6 +877,12 @@ class SSLSocket(object):
 
         return newsock, addr
 
+    def get_current_cipher (self):
+        if self.native_object == _ffi.NULL:
+            return _ffi.NULL
+        
+        return WolfSSLCipher(self.native_object)
+
     def get_peer_x509(self):
         """
         Returns WolfSSLX509 object representing the peer's certificate,
@@ -862,6 +914,12 @@ class SSLSocket(object):
         Returns the version of the protocol used in the connection.
         """
         return _ffi.string(_lib.wolfSSL_get_version(self.native_object)).decode("ascii")
+    
+    def get_cipher_name(self):
+        """
+        Returns the cipher name in the format DHE-RSA by passing through argument to wolfSSL_get_cipher_name_internal. 
+        """
+        return _ffi.string(_lib.wolfSSL_get_cipher_name(self.native_object)).decode("ascii")
 
     # The following functions expose functionality of the underlying
     # Socket object. These are also exposed through Python's ssl module
@@ -898,7 +956,29 @@ class SSLSocket(object):
         Return the underlying socket's address
         """
         return self._sock.getsockname()
+    
+WOLFSSL_CIPHER_LIST_MAX_SIZE = 4096
 
+def get_ciphers():
+        """
+        Returns the ciphers enabled in wolfSSL. 
+        """            
+
+        buff = _ffi.new("char[]", WOLFSSL_CIPHER_LIST_MAX_SIZE)
+        ret = _lib.wolfSSL_get_ciphers(buff, WOLFSSL_CIPHER_LIST_MAX_SIZE)
+        if ret:
+            return _ffi.string(buff).decode("utf-8").split(':')
+
+
+def get_ciphers_iana():
+        """
+        Returns the ciphers in IANA format enabled in wolfSSL. 
+        """            
+
+        buff = _ffi.new("char[]", WOLFSSL_CIPHER_LIST_MAX_SIZE)
+        ret = _lib.wolfSSL_get_ciphers_iana(buff, WOLFSSL_CIPHER_LIST_MAX_SIZE)
+        if ret:
+            return _ffi.string(buff).decode("utf-8").split(':')
 
 
 def wrap_socket(sock, keyfile=None, certfile=None, server_side=False,

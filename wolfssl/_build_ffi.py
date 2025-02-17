@@ -161,6 +161,18 @@ def make_flags(prefix, debug):
     # dtls
     flags.append("--enable-dtls")
 
+    # psk
+    flags.append("--enable-psk")
+
+    # aesccm
+    flags.append("--enable-aesccm")
+
+    # ecc
+    flags.append("--enable-ecc")
+
+    # pwdbased
+    flags.append("--enable-pwdbased")
+
     # crl
     flags.append("--enable-crl")
 
@@ -186,8 +198,9 @@ def make_flags(prefix, debug):
     # Note: websocket-client test server (echo.websocket.org) only supports
     # TLS 1.2 with TLS_RSA_WITH_AES_128_CBC_SHA
     # If compiling for use with websocket-client, must enable static RSA suites.
-    # cflags.append("-DWOLFSSL_STATIC_RSA")
-
+    cflags.append("-DWOLFSSL_STATIC_RSA")
+    cflags.append("-DWOLFSSL_STATIC_PSK")
+    
     joined_flags = " ".join(flags)
     joined_cflags = " ".join(cflags)
 
@@ -365,6 +378,7 @@ cdef = """
     typedef ... WOLFSSL_ASN1_GENERALIZEDTIME;
     typedef ... WOLFSSL_ASN1_STRING;
     typedef ... WOLFSSL_ASN1_OBJECT;
+    typedef ... WOLFSSL_CIPHER;
 
     /*
      * Non-opaque structs, where we need access to fields.
@@ -489,6 +503,18 @@ cdef += """
     int           wolfSSL_dtls_free_peer(void*);
     int           wolfSSL_dtls_set_peer(WOLFSSL*, void*, unsigned int);
     const char*   wolfSSL_get_version(const WOLFSSL*);
+    int           wolfSSL_get_ciphers(char* buff, int len);
+    int           wolfSSL_get_ciphers_iana(char* buf, int len);
+    char*         wolfSSL_get_cipher_list (int priority);
+    const char *  wolfSSL_get_cipher_name (WOLFSSL*);
+    int           wolfSSL_get_current_cipher_suite (WOLFSSL*);
+    const char*   wolfSSL_get_cipher_name_iana_from_suite(unsigned char cipherSuite0, unsigned char cipherSuite);
+
+    WOLFSSL_CIPHER* wolfSSL_get_current_cipher (WOLFSSL*);
+    const char*   wolfSSL_CIPHER_get_name (const WOLFSSL_CIPHER* cipher);
+    const char*  wolfSSL_CIPHER_get_version(const WOLFSSL_CIPHER* cipher);
+    word32       wolfSSL_CIPHER_get_id(const WOLFSSL_CIPHER* cipher);
+
 
     /*
      * WOLFSSL_X509 functions

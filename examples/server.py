@@ -27,6 +27,7 @@
 import sys
 import socket
 import argparse
+import time
 
 try:
     import wolfssl
@@ -153,6 +154,7 @@ def main():
         try:
             secure_socket = None
             if args.u:
+                time.sleep(0.5)
                 secure_socket = context.wrap_socket(bind_socket)
             else:
                 new_socket, from_addr = bind_socket.accept()

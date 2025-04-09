@@ -71,3 +71,4 @@ venv_*
 # wolfSSL specific things
 wolfssl/_ffi*
 tmpdist/
+.venv/*

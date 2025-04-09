@@ -366,6 +366,12 @@ class SSLContext(object):
         def wrapper(sz, rw, userdata):
             return callback(sz, rw, self._passwd_userdata)
         return WolfsslPwd_cb(wrapper)
+    
+    def use_session_ticket(self):
+        return _lib.wolfSSL_CTX_UseSessionTicket(self.native_object)
+    
+    def use_secure_renegotiation(self):
+        return _lib.wolfSSL_CTX_UseSecureRenegotiation(self.native_object)
 
 class WolfSSLCipher:
     """
@@ -882,6 +888,9 @@ class SSLSocket(object):
             return _ffi.NULL
         
         return WolfSSLCipher(self.native_object)
+    
+    def use_session_ticket(self):
+        return _lib.wolfSSL_UseSessionTicket(self.native_object)
 
     def get_peer_x509(self):
         """

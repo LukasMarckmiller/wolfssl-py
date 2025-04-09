@@ -154,6 +154,28 @@ def make_flags(prefix, debug):
     # lib only
     flags.append("--disable-shared")
     flags.append("--disable-examples")
+    
+    # tls 1.3
+    flags.append("--enable-tls13")
+    # BSH specific
+    flags.append("--enable-tlsv10")
+    flags.append("--enable-curve25519")
+    flags.append("--enable-ed25519")
+    flags.append("--enable-certreq")
+    flags.append("--enable-certgen")
+    flags.append("--enable-keygen")
+    flags.append("--enable-certext")
+    flags.append("--enable-base64encode")
+    flags.append("--enable-secure-renegotiation")
+    flags.append("--enable-harden")
+    flags.append("--enable-hkdf")
+    flags.append("--enable-ecccustcurves")
+    flags.append("--enable-pkcallbacks")
+    flags.append("--enable-pkcs7")
+    flags.append("--enable-ocsp")
+    flags.append("--enable-ocspstapling")
+    flags.append("--enable-reproducible-build")
+    flags.append("--enable-lighty")
 
     # dtls 1.3
     flags.append("--enable-dtls13")
@@ -179,10 +201,12 @@ def make_flags(prefix, debug):
     # openssl extra
     flags.append("--enable-opensslextra")
 
+    flags.append("--enable-session-ticket")
+
     # for urllib3 - requires SNI (tlsx), options (openssl compat), peer cert
     flags.append("--enable-tlsx")
     flags.append("--enable-opensslextra")
-    cflags.append("-DKEEP_PEER_CERT")
+   # cflags.append("-DKEEP_PEER_CERT")
 
     # for pyOpenSSL
     if not disable_scr:
@@ -199,7 +223,7 @@ def make_flags(prefix, debug):
     # TLS 1.2 with TLS_RSA_WITH_AES_128_CBC_SHA
     # If compiling for use with websocket-client, must enable static RSA suites.
     cflags.append("-DWOLFSSL_STATIC_RSA")
-    cflags.append("-DWOLFSSL_STATIC_PSK")
+    #cflags.append("-DWOLFSSL_STATIC_PSK")
     
     joined_flags = " ".join(flags)
     joined_cflags = " ".join(cflags)
@@ -273,7 +297,7 @@ def generate_libwolfssl():
     ensure_wolfssl_src(version)
     prefix = local_path("lib/wolfssl/{}/{}".format(
         get_platform(), version))
-    make(make_flags(prefix, False))
+    make(make_flags(prefix, True))
 
 # detect features if user has built against local wolfSSL library
 # if they are not, we are controlling build options above
@@ -334,7 +358,6 @@ optional_funcs = make_optional_func_list(libwolfssl_path, optional_funcs)
 source = """
     #include <wolfssl/options.h>
     #include <wolfssl/ssl.h>
-
     int OLDTLS_ENABLED = """ + str(OLDTLS_ENABLED) + """;
 """
 ffi_source = source + openssl.source
@@ -470,6 +493,8 @@ cdef += """
     int  wolfSSL_CTX_set_tlsext_servername_callback(WOLFSSL_CTX*,
             CallbackSniRecv);
     long wolfSSL_CTX_set_mode(WOLFSSL_CTX*, long);
+    int  wolfSSL_CTX_UseSessionTicket(WOLFSSL_CTX*);
+    int  wolfSSL_CTX_UseSecureRenegotiation(WOLFSSL_CTX*);
 
     /*
      * SSL/TLS Session functions
@@ -509,7 +534,9 @@ cdef += """
     const char *  wolfSSL_get_cipher_name (WOLFSSL*);
     int           wolfSSL_get_current_cipher_suite (WOLFSSL*);
     const char*   wolfSSL_get_cipher_name_iana_from_suite(unsigned char cipherSuite0, unsigned char cipherSuite);
-
+    int           wolfSSL_UseSessionTicket(WOLFSSL*);
+    int           wolfSSL_UseSecureRenegotiation(WOLFSSL*);
+    
     WOLFSSL_CIPHER* wolfSSL_get_current_cipher (WOLFSSL*);
     const char*   wolfSSL_CIPHER_get_name (const WOLFSSL_CIPHER* cipher);
     const char*  wolfSSL_CIPHER_get_version(const WOLFSSL_CIPHER* cipher);
